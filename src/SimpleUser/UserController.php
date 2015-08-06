@@ -40,6 +40,11 @@ class UserController
     protected $isEmailConfirmationRequired = false;
     protected $isPasswordResetEnabled = true;
 
+    /** @var array */
+    protected $userRoles = array(
+        "ROLE_ADMIN", "ROLE_USER"
+    );
+
     /**
      * Constructor.
      *
@@ -469,7 +474,7 @@ class UserController
             'layout_template' => $this->getTemplate('layout'),
             'error' => implode("\n", $errors),
             'user' => $user,
-            'available_roles' => array('ROLE_USER', 'ROLE_ADMIN'),
+            'available_roles' => $this->userRoles,
             'image_url' => $this->getGravatarUrl($user->getEmail()),
             'customFields' => $customFields,
             'isUsernameRequired' => $this->isUsernameRequired,
@@ -556,6 +561,15 @@ class UserController
     public function setEmailConfirmationRequired($isRequired)
     {
         $this->isEmailConfirmationRequired = (bool) $isRequired;
+    }
+
+
+    public function setUserRoles($userRoles) {
+        $this->userRoles = $userRoles;
+    }
+
+    public function getUserRoles() {
+        return $this->userRoles;
     }
 
     // ---------------------------------------------------------------------------

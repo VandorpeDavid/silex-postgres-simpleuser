@@ -92,6 +92,11 @@ class UserServiceProvider implements ServiceProviderInterface, ControllerProvide
                 'attribute' => 'attribute',
                 'value' => 'value',
             ),
+
+            'userRoles' => array(
+                'ROLE_USER',
+                'ROLE_ADMIN'
+            )
         );
 
         // Initialize $app['user.options'].
@@ -120,6 +125,9 @@ class UserServiceProvider implements ServiceProviderInterface, ControllerProvide
                 if (isset($app['user.options']['listTemplate']) && !isset($app['user.options']['templates']['list'])) {
                     $options['templates']['list'] = $app['user.options']['listTemplate'];
                 }
+
+                // No duplicates allowed
+                $app['user.options']['userRoles'] = array_unique($app['user.options']['userRoles']);
             }
             $app['user.options'] = $options;
         });
@@ -155,6 +163,8 @@ class UserServiceProvider implements ServiceProviderInterface, ControllerProvide
             $controller->setEmailConfirmationRequired($app['user.options']['emailConfirmation']['required']);
             $controller->setTemplates($app['user.options']['templates']);
             $controller->setEditCustomFields($app['user.options']['editCustomFields']);
+
+            $controller->setUserRoles($app['user.options']['userRoles']);
 
             return $controller;
         });
