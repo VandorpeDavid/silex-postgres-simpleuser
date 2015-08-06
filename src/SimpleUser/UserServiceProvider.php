@@ -127,7 +127,7 @@ class UserServiceProvider implements ServiceProviderInterface, ControllerProvide
                 }
 
                 // No duplicates allowed
-                $app['user.options']['userRoles'] = array_unique($app['user.options']['userRoles']);
+                $options['userRoles'] = array_unique($options['userRoles']);
             }
             $app['user.options'] = $options;
         });
