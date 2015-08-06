@@ -163,20 +163,20 @@ class UserManager implements UserProviderInterface
         $userClass = $this->getUserClass();
 
         /** @var User $user */
-        $user = new $userClass($data['email']);
+        $user = new $userClass($data[$this->getUserColumns('email')]);
 
-        $user->setId($data['id']);
-        $user->setPassword($data['password']);
-        $user->setSalt($data['salt']);
-        $user->setName($data['name']);
-        if ($roles = explode(',', $data['roles'])) {
+        $user->setId($data[$this->getUserColumns('id')]);
+        $user->setPassword($data[$this->getUserColumns('password')]);
+        $user->setSalt($data[$this->getUserColumns('salt')]);
+        $user->setName($data[$this->getUserColumns('name')]);
+        if ($roles = explode(',', $data[$this->getUserColumns('roles')])) {
             $user->setRoles($roles);
         }
-        $user->setTimeCreated($data['time_created']);
-        $user->setUsername($data['username']);
-        $user->setEnabled($data['isEnabled']);
-        $user->setConfirmationToken($data['confirmationToken']);
-        $user->setTimePasswordResetRequested($data['timePasswordResetRequested']);
+        $user->setTimeCreated($data[$this->getUserColumns('time_created')]);
+        $user->setUsername($data[$this->getUserColumns('username')]);
+        $user->setEnabled($data[$this->getUserColumns('isEnabled')]);
+        $user->setConfirmationToken($data[$this->getUserColumns('confirmationToken')]);
+        $user->setTimePasswordResetRequested($data[$this->getUserColumns('timePasswordResetRequested')]);
 
         if (!empty($data['customFields'])) {
             $user->setCustomFields($data['customFields']);
