@@ -1,5 +1,5 @@
 {
-    "name": "jasongrimes/silex-postgres-simpleuser",
+    "name": "davdorpe/silex-postgres-simpleuser",
     "type": "library",
     "description": "A simple postgres database-backed user provider for Silex, with associated services and controllers.",
     "keywords": ["silex", "user", "user provider", "simple user provider", "postgres", "postgresql"],
