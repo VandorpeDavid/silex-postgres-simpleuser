@@ -519,6 +519,10 @@ class UserManager implements UserProviderInterface
      * Contains change jasongrimes' library:
      * Problem: the postgres PSO->lastInsertId() requires an additional parameter (which will depend on the db)
      * Solution: Use INSERT INTO RETURNING syntax
+     *
+     * Problem: setParameter('isEnabled', false, \PDO::PARAM_BOOL); syntax not supported for $this->conn->fetchColumn,
+     *      yet required for postgres when inserting "false"
+     * Solution: $this->conn->convertToDatabaseValue($user->isEnabled(), 'bool');
      */
     public function insert(User $user)
     {
@@ -530,6 +534,8 @@ class UserManager implements UserProviderInterface
                 ', '.$this->getUserColumns('confirmationToken').', '.$this->getUserColumns('timePasswordResetRequested').')
             VALUES (:email, :password, :salt, :name, :roles, :timeCreated, :username, :isEnabled, :confirmationToken, :timePasswordResetRequested) RETURNING '. $this->getUserColumns('id');
 
+        $isEnabled = $this->conn->convertToDatabaseValue($user->isEnabled(), 'bool');
+
         $params = array(
             'email' => $user->getEmail(),
             'password' => $user->getPassword(),
@@ -538,7 +544,7 @@ class UserManager implements UserProviderInterface
             'roles' => implode(',', $user->getRoles()),
             'timeCreated' => $user->getTimeCreated(),
             'username' => $user->getRealUsername(),
-            'isEnabled' => $user->isEnabled(),
+            'isEnabled' => $isEnabled,
             'confirmationToken' => $user->getConfirmationToken(),
             'timePasswordResetRequested' => $user->getTimePasswordResetRequested(),
         );
