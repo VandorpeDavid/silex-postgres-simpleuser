@@ -88,7 +88,7 @@ class UserManager implements UserProviderInterface
     public function loadUserByUsername($username)
     {
         if (strpos($username, '@') !== false) {
-            $user = $this->findOneBy(array($this->getUserColumns('email') => $username));
+            $user = $this->findOneBy(array('email' => $username));
             if (!$user) {
                 throw new UsernameNotFoundException(sprintf('Email "%s" does not exist.', $username));
             }
@@ -96,7 +96,7 @@ class UserManager implements UserProviderInterface
             return $user;
         }
 
-        $user = $this->findOneBy(array($this->getUserColumns('username') => $username));
+        $user = $this->findOneBy(array('username' => $username));
         if (!$user) {
             throw new UsernameNotFoundException(sprintf('Username "%s" does not exist.', $username));
         }
@@ -354,7 +354,7 @@ class UserManager implements UserProviderInterface
      */
     public function getUser($id)
     {
-        return $this->findOneBy(array($this->getUserColumns('id') => $id));
+        return $this->findOneBy(array('id' => $id));
     }
 
     /**
@@ -384,11 +384,16 @@ class UserManager implements UserProviderInterface
      * </pre>
      * @return User[] An array of matching User instances, or an empty array if no matching users were found.
      */
-    public function findBy(array $criteria = array(), array $options = array())
+    public function findBy(array $criteria = array(), array $options = array()) {
+        return findBy($this->transformCriteria($criteria), $options);
+    }
+
+    private function __findBy(array $criteria = array(), array $options = array())
     {
         // Check the identity map first.
         if (array_key_exists($this->getUserColumns('id'), $criteria) 
             && array_key_exists($criteria[$this->getUserColumns('id')], $this->identityMap)) {
+            // TODO: check other criteria!
             return array($this->identityMap[$criteria[$this->getUserColumns('id')]]);
         }
 
@@ -478,6 +483,18 @@ class UserManager implements UserProviderInterface
         return array ($sql, $params);
     }
 
+    protected function transformCriteria(array $criteria) {
+        $transformedCriteria = array();
+        foreach ($criteria as $key => $val) {
+            if ($key == 'customFields') {
+                $transformedCriteria[$key] = $val;
+            } else {
+                $transformedCriteria[$this->getUserColumns($key)] = $val;
+            }
+        }
+        return $transformedCriteria;
+    }
+
     /**
      * Count users that match the given criteria.
      *
@@ -486,6 +503,7 @@ class UserManager implements UserProviderInterface
      */
     public function findCount(array $criteria = array())
     {
+        $criteria = $this->transformCriteria($criteria);
         list ($common_sql, $params) = $this->createCommonFindSql($criteria);
 
         $sql = 'SELECT COUNT(*) ' . $common_sql;
@@ -497,6 +515,10 @@ class UserManager implements UserProviderInterface
      * Insert a new User instance into the database.
      *
      * @param User $user
+     *
+     * Contains change jasongrimes' library:
+     * Problem: the postgres PSO->lastInsertId() requires an additional parameter (which will depend on the db)
+     * Solution: Use INSERT INTO RETURNING syntax
      */
     public function insert(User $user)
     {
@@ -506,7 +528,7 @@ class UserManager implements UserProviderInterface
             ('.$this->getUserColumns('email').', '.$this->getUserColumns('password').', '.$this->getUserColumns('salt').', '.$this->getUserColumns('name').
                 ', '.$this->getUserColumns('roles').', '.$this->getUserColumns('time_created').', '.$this->getUserColumns('username').', '.$this->getUserColumns('isEnabled').
                 ', '.$this->getUserColumns('confirmationToken').', '.$this->getUserColumns('timePasswordResetRequested').')
-            VALUES (:email, :password, :salt, :name, :roles, :timeCreated, :username, :isEnabled, :confirmationToken, :timePasswordResetRequested) ';
+            VALUES (:email, :password, :salt, :name, :roles, :timeCreated, :username, :isEnabled, :confirmationToken, :timePasswordResetRequested) RETURNING '. $this->getUserColumns('id');
 
         $params = array(
             'email' => $user->getEmail(),
@@ -521,9 +543,9 @@ class UserManager implements UserProviderInterface
             'timePasswordResetRequested' => $user->getTimePasswordResetRequested(),
         );
 
-        $this->conn->executeUpdate($sql, $params);
+        $userid = $this->conn->fetchColumn($sql, $params);
 
-        $user->setId($this->conn->lastInsertId());
+        $user->setId($userid);
 
         $this->saveUserCustomFields($user);
 
@@ -620,8 +642,10 @@ class UserManager implements UserProviderInterface
     {
         $errors = $user->validate();
 
+        // TODO: Delete these, unique indexes solve this
+
         // Ensure email address is unique.
-        $duplicates = $this->findBy(array($this->getUserColumns('email') => $user->getEmail()));
+        $duplicates = $this->findBy(array('email' => $user->getEmail()));
         if (!empty($duplicates)) {
             foreach ($duplicates as $dup) {
                 if ($user->getId() && $dup->getId() == $user->getId()) {
@@ -632,7 +656,7 @@ class UserManager implements UserProviderInterface
         }
 
         // Ensure username is unique.
-        $duplicates = $this->findBy(array($this->getUserColumns('username') => $user->getRealUsername()));
+        $duplicates = $this->findBy(array('username' => $user->getRealUsername()));
         if (!empty($duplicates)) {
             foreach ($duplicates as $dup) {
                 if ($user->getId() && $dup->getId() == $user->getId()) {
@@ -705,16 +729,16 @@ class UserManager implements UserProviderInterface
         return $this->userTableName;
     }
 
+    /*
+     * Contains change jasongrimes' library:
+     * Problem: quoting the columnnames result in trouble when using preparedstatements because
+     * ': + columname' becomes ':"columname" instead of :columnname
+     * Temporary solution: Dont quote
+     * TODO: permanent solution
+     */
+
     public function setUserColumns(array $userColumns){
-        $conn = $this->conn;
-        //Escape the column names
-
-        $escapedUserColumns = array_map(function($column) use ($conn){
-            return $conn->quoteIdentifier($column,\PDO::PARAM_STR);
-        }, $userColumns);
-
-        //Merge the existing column names
-        $this->userColumns = array_merge($this->userColumns, $escapedUserColumns);
+        $this->userColumns = array_merge($this->userColumns, $userColumns);
     }
 
     public function getUserColumns($column = ""){
