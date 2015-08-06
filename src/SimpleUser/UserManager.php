@@ -385,7 +385,7 @@ class UserManager implements UserProviderInterface
      * @return User[] An array of matching User instances, or an empty array if no matching users were found.
      */
     public function findBy(array $criteria = array(), array $options = array()) {
-        return findBy($this->transformCriteria($criteria), $options);
+        return __findBy($this->transformCriteria($criteria), $options);
     }
 
     private function __findBy(array $criteria = array(), array $options = array())
