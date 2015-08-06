@@ -534,7 +534,7 @@ class UserManager implements UserProviderInterface
                 ', '.$this->getUserColumns('confirmationToken').', '.$this->getUserColumns('timePasswordResetRequested').')
             VALUES (:email, :password, :salt, :name, :roles, :timeCreated, :username, :isEnabled, :confirmationToken, :timePasswordResetRequested) RETURNING '. $this->getUserColumns('id');
 
-        $isEnabled = $this->conn->convertToDatabaseValue($user->isEnabled(), 'bool');
+        $isEnabled = $this->conn->convertToDatabaseValue($user->isEnabled(), 'boolean');
 
         $params = array(
             'email' => $user->getEmail(),
