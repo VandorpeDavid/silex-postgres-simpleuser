@@ -47,9 +47,10 @@ class User implements AdvancedUserInterface, \Serializable
         $roles = $this->roles;
 
         // Every user must have at least one role, per Silex security docs.
-        $roles[] = 'ROLE_USER';
+        if(sizeof($this->roles) < 1)
+            $roles[] = 'ROLE_USER';
 
-        return array_unique($roles);
+        return $roles;
     }
 
     /**
@@ -59,6 +60,11 @@ class User implements AdvancedUserInterface, \Serializable
      */
     public function setRoles(array $roles)
     {
+        // Every user must have at least one role, per Silex security docs.
+        if(sizeof($roles) < 1 ) {
+            throw new Exception("Every user must have at least one role, per Silex security docs."); // TODO: write exception class
+        }
+
         $this->roles = array();
 
         foreach ($roles as $role) {
@@ -86,10 +92,6 @@ class User implements AdvancedUserInterface, \Serializable
     {
         $role = strtoupper($role);
 
-        if ($role === 'ROLE_USER') {
-            return;
-        }
-
         if (!$this->hasRole($role)) {
             $this->roles[] = $role;
         }
@@ -103,6 +105,10 @@ class User implements AdvancedUserInterface, \Serializable
     public function removeRole($role)
     {
         if (false !== $key = array_search(strtoupper($role), $this->roles, true)) {
+            if ( sizeof($this->roles) == 1) {
+                throw new Exception("Every user must have at least one role, per Silex security docs."); // TODO: write exception class
+            }
+
             unset($this->roles[$key]);
             $this->roles = array_values($this->roles);
         }
